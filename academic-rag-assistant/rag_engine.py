@@ -423,38 +423,59 @@ INSTRUCTIONS:
 
     def _call_gemini(self, prompt: str) -> str:
         """
-        Sends the prompt to Gemini with automatic model fallback and error handling.
+        Sends the prompt to Gemini with automatic model fallback, retry on 503 spikes,
+        and graceful error handling.
         """
-        # Try primary model first, fallback to secondary if quota/availability issue
-        models_to_try = [self.generation_model, self.fallback_generation_model, "gemini-3.8-flash"]
+        import time
+
+        models_to_try = [
+            self.generation_model,
+            "gemini-3.8-flash",
+            "gemini-3.8-pro",
+            "gemini-2.0-flash-lite"
+        ]
+
+        seen = set()
+        deduped_models = [m for m in models_to_try if m and not (m in seen or seen.add(m))]
         last_error = None
 
-        for model_name in models_to_try:
-            try:
-                response = self._client.models.generate_content(
-                    model=model_name,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        temperature=0.3,  # Academic precision
-                        max_output_tokens=3000,
+        for model_name in deduped_models:
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    response = self._client.models.generate_content(
+                        model=model_name,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            temperature=0.3,
+                            max_output_tokens=3000,
+                        )
                     )
-                )
-                if response and response.text:
-                    return response.text
-                elif response and hasattr(response, "candidates") and response.candidates:
-                    first_cand = response.candidates[0]
-                    if hasattr(first_cand, "content") and first_cand.content and first_cand.content.parts:
-                        return first_cand.content.parts[0].text
-            except APIError as api_err:
-                logger.warning(f"Gemini API error with model '{model_name}': {api_err}")
-                last_error = api_err
-                continue
-            except Exception as e:
-                logger.warning(f"Error calling Gemini model '{model_name}': {e}")
-                last_error = e
-                continue
+                    if response and response.text:
+                        return response.text
+                    elif response and hasattr(response, "candidates") and response.candidates:
+                        first_cand = response.candidates[0]
+                        if hasattr(first_cand, "content") and first_cand.content and first_cand.content.parts:
+                            return first_cand.content.parts[0].text
 
-        raise RuntimeError(f"Unable to generate response from Gemini API: {str(last_error)}")
+                except APIError as api_err:
+                    err_str = str(api_err)
+                    last_error = api_err
+                    # Auto-retry on 503/429 spikes
+                    if "503" in err_str or "UNAVAILABLE" in err_str or "429" in err_str:
+                        time.sleep(2 * (attempt + 1))
+                        continue
+                    break
+
+                except Exception as e:
+                    last_error = e
+                    time.sleep(1)
+                    continue
+
+        err_msg = str(last_error)
+        if "503" in err_msg or "UNAVAILABLE" in err_msg:
+            raise RuntimeError("Google Gemini servers are momentarily experiencing peak traffic. Please try again in a few seconds.")
+        raise RuntimeError(f"Unable to generate response from Gemini API: {err_msg}")
 
     def get_stats(self) -> Dict[str, Any]:
         """Returns statistics about the current RAG knowledge base."""
