@@ -1,0 +1,27 @@
+# Environment & Secrets
+.env
+.env.local
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Uploads and Local Storage (Render Free Tier Ephemeral)
+uploads/*
+!uploads/.gitkeep
+storage/*
+!storage/.gitkeep
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
