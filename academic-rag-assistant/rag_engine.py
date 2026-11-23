@@ -41,8 +41,8 @@ class RAGEngine:
 
         self.api_key = api_key or os.environ.get("GEMINI_API_KEY", "").strip()
         self.embedding_model = "text-embedding-004"
-        self.generation_model = "gemini-2.5-flash"
-        self.fallback_generation_model = "gemini-1.5-flash"
+        self.generation_model = "gemini-3.8-flash"
+        self.fallback_generation_model = "gemini-2.5-flash"
 
         # In-memory storage for lightning-fast retrieval
         self.documents: Dict[str, Dict[str, Any]] = {}
@@ -426,7 +426,7 @@ INSTRUCTIONS:
         Sends the prompt to Gemini with automatic model fallback and error handling.
         """
         # Try primary model first, fallback to secondary if quota/availability issue
-        models_to_try = [self.generation_model, self.fallback_generation_model, "gemini-2.0-flash"]
+        models_to_try = [self.generation_model, self.fallback_generation_model, "gemini-2.5-flash"]
         last_error = None
 
         for model_name in models_to_try:
