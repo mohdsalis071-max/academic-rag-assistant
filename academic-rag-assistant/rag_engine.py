@@ -42,7 +42,7 @@ class RAGEngine:
         self.api_key = api_key or os.environ.get("GEMINI_API_KEY", "").strip()
         self.embedding_model = "text-embedding-004"
         self.generation_model = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
-        self.fallback_generation_model = "gemini-3.8-flash"
+        self.fallback_generation_model = "gemini-3.5-flash-lite"
 
         # In-memory storage for lightning-fast retrieval
         self.documents: Dict[str, Dict[str, Any]] = {}
@@ -428,7 +428,6 @@ INSTRUCTIONS:
         models_to_try = [
             "gemini-3.5-flash-lite",
             "gemini-3.8-flash",
-            "gemini-3.8-pro"
         ]
 
         seen = set()
