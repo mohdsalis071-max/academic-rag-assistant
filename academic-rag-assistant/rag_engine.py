@@ -41,7 +41,7 @@ class RAGEngine:
 
         self.api_key = api_key or os.environ.get("GEMINI_API_KEY", "").strip()
         self.embedding_model = "text-embedding-004"
-        self.generation_model = "gemini-3.8-flash"
+        self.generation_model = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
         self.fallback_generation_model = "gemini-3.8-flash"
 
         # In-memory storage for lightning-fast retrieval
@@ -429,10 +429,10 @@ INSTRUCTIONS:
         import time
 
         models_to_try = [
-            self.generation_model,
+            self.generation_model,\
+            "gemini-3.5-flash-lite",
             "gemini-3.8-flash",
             "gemini-3.8-pro",
-            "gemini-2.0-flash-lite"
         ]
 
         seen = set()
